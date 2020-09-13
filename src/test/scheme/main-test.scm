@@ -1,5 +1,7 @@
 (import (scheme base)
-        (arvyy kawa-spark)
+        (mapping-test)
+        (request-test)
+        (response-test)
         (srfi 64))
 
 (define success #t)
@@ -7,11 +9,15 @@
 
 (test-group 
   "Mapping test"
-  (include "mapping-test.scm"))
+  (do-mapping-test))
 
 (test-group
-  "Request method test"
-  (include "request-test.scm"))
+  "Request methods test"
+  (do-request-test))
+
+(test-group
+  "Response methods test"
+  (do-response-test))
 
 ;; these are needed for the application to return non-0 on test failures
 ;; so that on maven side we can abort execution.

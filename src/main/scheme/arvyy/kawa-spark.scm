@@ -1,7 +1,7 @@
 (define-library
   (arvyy kawa-spark)
   (import (scheme base)
-          (class spark Spark Request Response Session Filter))
+          (class spark Spark Request Response Session Filter Route))
   (export 
     ;; path mappings
     get
@@ -40,10 +40,10 @@
     req/path-info
     req/port
     req/protocol
+    req/query-string
     req/query-params
     req/query-param
     req/query-param-values
-    req/raw
     req/request-method
     req/scheme
     req/session
@@ -57,7 +57,6 @@
     resp/body
     resp/set-body!
     resp/set-header!
-    resp/raw
     resp/redirect
     resp/status
     resp/set-status!
@@ -73,7 +72,6 @@
     session/attributes
     session/id
     session/new?
-    session/raw
     
     ;; halt
     halt!
@@ -99,104 +97,141 @@
     await-stop)
   
   (begin
+    
+    ;; private util
+    (define (map->alist m ::java.util.Map)
+      (define (entry->pair e ::java.util.Map:Entry)
+        (cons
+          (e:getKey)
+          (e:getValue)))
+      (map entry->pair (m:entrySet)))
+    
+    (define-syntax route-stx
+      (syntax-rules ()
+        ((_ fn)
+         (lambda (req resp) (fn req resp)))))
+    
+    
     ;; path mappings
-    (define get Spark:get)
-    (define post Spark:post)
-    (define put Spark:put)
-    (define delete Spark:delete)
-    (define options Spark:options)
-    (define (before path ::String handler ::Filter)
-      (Spark:before path handler))
-    (define (before-all handler ::Filter)
-      (Spark:before handler))
-    (define (after path ::String handler ::Filter)
-      (Spark:after path handler))
-    (define (after-all handler ::Filter)
-      (Spark:after handler))
-    (define (after-after path ::String handler ::Filter)
-      (Spark:after-after path handler))
-    (define (after-after-all handler ::Filter)
-      (Spark:after-after handler))
-    (define redirect/get Spark:redirect:get)
-    (define redirect/post Spark:redirect:post)
-    (define redirect Spark:redirect:any)
+    ;;TODO add macro to 
+    (define (get path route)
+      (Spark:get path (route-stx route)))
+    (define (post path route)
+      (Spark:post path (route-stx route)))
+    (define (put path route)
+      (Spark:put path (route-stx route)))
+    (define (delete path route)
+      (Spark:delete path (route-stx route)))
+    (define (options path route)
+      (Spark:options path (route-stx route)))
+    (define (before path handler)
+      (define (before* p ::String h ::Filter)
+        (Spark:before p h))
+      (before* path (route-stx handler)))
+    (define (before-all handler)
+      (define (before-all* h ::Filter)
+        (Spark:before h))
+      (before-all* (route-stx handler)))
+    (define (after path handler)
+      (define (after* p ::String h ::Filter)
+        (Spark:after p h))
+      (after* path (route-stx handler)))
+    (define (after-all handler)
+      (define (after-all* h ::Filter)
+        (Spark:after h))
+      (after-all* (route-stx handler)))
+    (define (after-after path handler)
+      (Spark:afterAfter path (route-stx handler)))
+    (define (after-after-all handler)
+      (Spark:afterAfter (route-stx handler)))
+    (define (redirect/get from to)
+      (Spark:redirect:get from to))
+    (define (redirect/post from to)
+      (Spark:redirect:post from to))
+    (define (redirect from to)
+      (Spark:redirect:any from to))
     (define-syntax path
       (syntax-rules ()
         ((_ p body ...)
          (Spark:path p (lambda () body ...)))))
     
     ;; request
-    (define req/attributes Request:attributes)
+    (define (req/attributes req ::Request)
+      ; convert Set to list
+      (map (lambda (e) e) (req:attributes)))
     (define (req/attribute req ::Request attr)
-      (Request:attribute req attr))
+      (req:attribute attr))
     (define (req/set-attribute! req ::Request attr value)
-      (Request:attribute req attr value))
+      (req:attribute attr value))
     (define req/body Request:body)
-    (define req/body-as-bytes Request:bodyAsBytes)
+    (define (req/body-as-bytes req ::Request)
+      ; convert java byte array into vector
+      (vector-map (lambda (e) e) (req:bodyAsBytes)))
     (define req/content-length Request:contentLength)
     (define req/content-type Request:contentType)
     (define req/context-path Request:contextPath)
-    (define req/cookies Request:cookies)
+    (define (req/cookies req ::Request)
+      (map->alist (req:cookies)))
     (define req/cookie Request:cookie)
     (define (req/headers req ::Request)
-      (Request:headers req))
+      (map (lambda (e) e) (req:headers)))
     (define (req/header req ::Request header)
-      (Request:headers req header))
+      (req:headers header))
     (define req/host Request:host)
     (define req/ip Request:ip)
     (define (req/params req ::Request)
-      (Request:params req))
+      (map->alist (req:params)))
     (define (req/param req ::Request param)
-      (Request:params req param))
+      (req:params param))
     (define req/path-info Request:pathInfo)
     (define req/port Request:port)
     (define req/protocol Request:protocol)
+    (define req/query-string Request:queryString)
     (define (req/query-params req ::Request)
-      (Request:queryParams req))
+      (map (lambda (e) e) (req:queryParams)))
     (define (req/query-param req ::Request param)
-      (Request:queryParams req param))
-    (define req/query-param-values Request:queryParamsValues)
-    (define req/raw Request:raw)
+      (req:queryParams param))
+    (define (req/query-param-values req ::Request param)
+      (map (lambda (e) e) (req:queryParamsValues param)))
     (define req/request-method Request:requestMethod)
     (define req/scheme Request:scheme)
     (define (req/session req ::Request)
-      (Request:session req))
+      (req:session #f))
     (define (req/create-session! req ::Request)
-      (Request:session req #t))
-    (define req/splat Request:splat)
+      (req:session #t))
+    (define (req/splat req ::Request)
+      (map (lambda (e) e) (req:splat)))
     (define req/uri Request:uri)
     (define req/url Request:url)
     (define req/user-agent Request:userAgent)
     
     ;; response
     (define (resp/body resp ::Response)
-      (Response:body resp))
+      (resp:body))
     (define (resp/set-body! resp ::Response body)
-      (Response:body resp body))
+      (resp:body body))
     (define resp/set-header! Response:header)
-    (define resp/raw Response:raw)
     (define resp/redirect Response:redirect)
     (define (resp/status resp ::Response)
-      (Response:status resp))
+      (resp:status))
     (define (resp/set-status! resp ::Response status)
-      (Response:status resp status))
+      (resp:status status))
     (define (resp/type resp ::Response)
-      (Response:type resp))
+      (resp:type))
     (define (resp/set-type! resp ::Response type)
-      (Response:type resp type))
+      (resp:type type))
     (define resp/set-cookie! Response:cookie)
     (define resp/remove-cookie! Response:removeCookie)
     
     ;; session
     (define (session/attribute s ::Session attr)
-      (Session:attribute s attr))
+      (s:attribute attr))
     (define (session/set-attribute! s ::Session attr value)
-      (Session:attribute s attr value))
+      (s:attribute attr value))
     (define session/remove-attribute! Session:removeAttribute)
     (define session/attributes Session:attributes)
     (define session/id Session:id)
     (define session/new? Session:isNew)
-    (define session/raw Session:raw)
     
     ;; halt
     (define (halt! code message)

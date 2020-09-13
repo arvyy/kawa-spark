@@ -13,11 +13,14 @@
     </properties>
 
     <dependencies>
+
         <dependency>
-            <groupId>gnu</groupId>
+            <groupId>com.github.arvyy</groupId>
             <artifactId>kawa</artifactId>
-            <version>3.0.0</version>
+            <version>3.0</version>
+            <scope>provided</scope>
         </dependency>
+
         <dependency>
             <groupId>com.sparkjava</groupId>
             <artifactId>spark-core</artifactId>
@@ -52,7 +55,7 @@
                 <plugin>
                     <groupId>com.github.arvyy</groupId>
                     <artifactId>kawa-maven-plugin</artifactId>
-                    <version>0.0.2-SNAPSHOT</version>
+                    <version>0.0.3-SNAPSHOT</version>
                     <executions>
                         <execution>
                             <id>test</id>
