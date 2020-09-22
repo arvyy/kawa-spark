@@ -9,10 +9,13 @@
     (test-util)
     (class org.apache.http.client.fluent Request Response Content Form)
     (class org.apache.http.entity ContentType))
+  
   (export do-request-test)
   (begin
     (define (do-request-test)
       (port 8080)
+      (init)
+      (await-initialization)
 
       (before "/attributes1"
               (lambda (req resp)
@@ -46,13 +49,13 @@
             (lambda (req resp)
               (req/content-type req)))
 
-      (post "/cookies"
+      (get "/cookies"
             (lambda (req resp)
               (define port (open-output-string))
               (write (req/cookies req) port)
               (get-output-string port )))
 
-      (post "/cookie"
+      (get "/cookie"
             (lambda (req resp)
               (req/cookie req "foo")))
 
@@ -115,8 +118,6 @@
            (lambda (req resp)
              (req/scheme req)))
 
-      ;; req/session and req/create-session! tested in session tests.
-
       (get "/splat/*"
            (lambda (req resp)
              (define port (open-output-string))
@@ -134,7 +135,7 @@
       (get "/user-agent"
            (lambda (req resp)
              (req/user-agent req)))
-
+      
       (test-req (Request:Get "http://localhost:8080/attributes1") "bar")
       (test-req (Request:Get "http://localhost:8080/attributes2") "foo")
       (let* ((post (Request:Post "http://localhost:8080/body1"))
@@ -149,9 +150,14 @@
       (let* ((post (Request:Post "http://localhost:8080/content-type"))
              (post (Request:bodyString post "a" (ContentType:create "text/plain" "UTF-8"))))
         (test-req post "text/plain; charset=UTF-8"))
-
-      ;;TODO test req for cookies
-
+      (let ()
+       (cookie-store:clear)
+       (set-cookie "foo" "foo-cookie")
+       (test-req (Request:Get "http://localhost:8080/cookies") "((\"foo\" . \"foo-cookie\"))"))
+      (let ()
+       (cookie-store:clear)
+       (set-cookie "foo" "foo-cookie")
+       (test-req (Request:Get "http://localhost:8080/cookie") "foo-cookie"))
       (test-req (Request:Get "http://localhost:8080/host") "localhost:8080")
       (test-req (Request:Get "http://localhost:8080/ip") "127.0.0.1")
       (test-req (Request:Get "http://localhost:8080/param1/foo") "foo")

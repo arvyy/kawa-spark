@@ -2,10 +2,19 @@
         (mapping-test)
         (request-test)
         (response-test)
+        (session-test)
         (srfi 64))
 
-(define success #t)
 (test-begin "Kawa-Spark test")
+
+;; on test end exit with non-zero status if there were failures
+(let* ((runner (test-runner-current))
+       (callback (test-runner-on-final runner)))
+  (test-runner-on-final!
+    runner
+    (lambda (r)
+      (callback r)
+      (exit (= 0 (test-runner-fail-count r))))))
 
 (test-group 
   "Mapping test"
@@ -19,8 +28,8 @@
   "Response methods test"
   (do-response-test))
 
-;; these are needed for the application to return non-0 on test failures
-;; so that on maven side we can abort execution.
-(set! success (= 0 (test-runner-fail-count (test-runner-get))))
+(test-group
+  "Session methods test"
+  (do-session-test))
+
 (test-end)
-(exit success)
