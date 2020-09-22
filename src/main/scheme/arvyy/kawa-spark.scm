@@ -113,7 +113,6 @@
     
     
     ;; path mappings
-    ;;TODO add macro to 
     (define (get path route)
       (Spark:get path (route-stx route)))
     (define (post path route)
@@ -238,9 +237,17 @@
       (Spark:halt code message))
 
     ;; error handling
-    (define not-found Spark:notFound)
-    (define internal-server-error Spark:internalServerError)
-    (define exception Spark:exception)
+    (define (not-found route)
+      (define (not-found* r ::Route)
+        (Spark:notFound r))
+      (not-found* (route-stx route)))
+    (define (internal-server-error route)
+      (define (internal-server-error* r ::Route)
+        (Spark:internalServerError r))
+      (internal-server-error* (route-stx route)))
+    (define (exception handler)
+      (Spark:exception Object:class 
+                       (lambda (exception req resp) (handler exception req resp))))
     
     ;; static files
     (define static-files/location Spark:staticFiles:location)
