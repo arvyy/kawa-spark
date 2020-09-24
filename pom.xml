@@ -6,7 +6,7 @@
 
     <groupId>com.github.arvyy</groupId>
     <artifactId>kawa-spark</artifactId>
-    <version>2.9.2.1</version>
+    <version>2.9.2.2-SNAPSHOT</version>
 
     <name>Kawa spark</name>
     <description>
