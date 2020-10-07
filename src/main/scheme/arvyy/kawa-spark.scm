@@ -102,7 +102,7 @@
     (define (map->alist m ::java.util.Map)
       (define (entry->pair e ::java.util.Map:Entry)
         (cons
-          (e:getKey)
+          (string->symbol (e:getKey))
           (e:getValue)))
       (map entry->pair (m:entrySet)))
     
@@ -181,7 +181,10 @@
     (define (req/params req ::Request)
       (map->alist (req:params)))
     (define (req/param req ::Request param)
-      (req:params param))
+      (define p (req:params param))
+      (if (eq? #!null p)
+          #f
+          p))
     (define req/path-info Request:pathInfo)
     (define req/port Request:port)
     (define req/protocol Request:protocol)
@@ -189,7 +192,10 @@
     (define (req/query-params req ::Request)
       (map (lambda (e) e) (req:queryParams)))
     (define (req/query-param req ::Request param)
-      (req:queryParams param))
+      (define p (req:queryParams param))
+      (if (eq? #!null p)
+          #f
+          p))
     (define (req/query-param-values req ::Request param)
       (map (lambda (e) e) (req:queryParamsValues param)))
     (define req/request-method Request:requestMethod)

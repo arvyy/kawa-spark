@@ -40,7 +40,13 @@
               (define port (open-output-string))
               (write (req/body-as-bytes req) port)
               (get-output-string port)))
-
+      
+      (post "/body3"
+            (lambda (req resp)
+              (define port (open-output-string))
+              (write (req/body req) port)
+              (get-output-string port)))
+      
       (post "/content-length"
             (lambda (req resp)
               (number->string (req/content-length req))))
@@ -77,6 +83,12 @@
              (define params (req/params req))
              (resp/set-type! resp "text/plain; charset=utf-8")
              (cdr (assoc ":var" params))))
+      
+      (get "/param3/:var"
+           (lambda (req resp)
+             (define port (open-output-string))
+             (write (req/param req "foo") port)
+             (get-output-string port)))
 
       (get "/path-info/:foo"
            (lambda (req resp)
@@ -103,6 +115,12 @@
       (get "/query-param"
            (lambda (req resp)
              (req/query-param req "foo")))
+      
+      (get "/query-param2"
+           (lambda (req resp)
+             (define port (open-output-string))
+             (write (req/query-param req "foo") port)
+             (get-output-string port)))
 
       (get "/query-param-values"
            (lambda (req resp)
@@ -144,6 +162,8 @@
       (let* ((post (Request:Post "http://localhost:8080/body2"))
              (post (Request:bodyString post "a" ContentType:DEFAULT_TEXT)))
         (test-req post "#(97)"))
+      (let* ((post (Request:Post "http://localhost:8080/body3")))
+        (test-req post "\"\""))
       (let* ((post (Request:Post "http://localhost:8080/content-length"))
              (post (Request:bodyString post "a" ContentType:DEFAULT_TEXT)))
         (test-req post "1"))
@@ -162,12 +182,14 @@
       (test-req (Request:Get "http://localhost:8080/ip") "127.0.0.1")
       (test-req (Request:Get "http://localhost:8080/param1/foo") "foo")
       (test-req (Request:Get "http://localhost:8080/param2/foo") "foo")
+      (test-req (Request:Get "http://localhost:8080/param3/foo") "#f")
       (test-req (Request:Get "http://localhost:8080/path-info/foo") "/path-info/foo")
       (test-req (Request:Get "http://localhost:8080/port") "8080")
       (test-req (Request:Get "http://localhost:8080/protocol") "HTTP/1.1")
       (test-req (Request:Get "http://localhost:8080/query-string?foo=bar") "foo=bar")
       (test-req (Request:Get "http://localhost:8080/query-params?foo=a&bar=b") "(\"bar\" \"foo\")")
       (test-req (Request:Get "http://localhost:8080/query-param?foo=a&foo=b") "a")
+      (test-req (Request:Get "http://localhost:8080/query-param2?bar=a") "#f")
       (test-req (Request:Get "http://localhost:8080/query-param-values?foo=a&foo=b") "(\"a\" \"b\")")
       (test-req (Request:Get "http://localhost:8080/request-method") "GET")
       (test-req (Request:Get "http://localhost:8080/scheme") "http")
