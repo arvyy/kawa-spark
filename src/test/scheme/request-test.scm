@@ -82,7 +82,7 @@
            (lambda (req resp)
              (define params (req/params req))
              (resp/set-type! resp "text/plain; charset=utf-8")
-             (cdr (assoc ":var" params))))
+             (cdr (assoc ':var params))))
       
       (get "/param3/:var"
            (lambda (req resp)
@@ -173,7 +173,7 @@
       (let ()
        (cookie-store:clear)
        (set-cookie "foo" "foo-cookie")
-       (test-req (Request:Get "http://localhost:8080/cookies") "((\"foo\" . \"foo-cookie\"))"))
+       (test-req (Request:Get "http://localhost:8080/cookies") "((foo . \"foo-cookie\"))"))
       (let ()
        (cookie-store:clear)
        (set-cookie "foo" "foo-cookie")
